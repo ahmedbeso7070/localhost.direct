@@ -38,41 +38,109 @@ It is important to note that the Certificate Bundle(s) remains LHD's properties 
 ### For non-SSL user  
 localhost.direct works immediately without configuration, functioning just like the traditional localhost, with added support for subdomain.localhost.direct.
 
-###  For user would like to use HTTPS (SSL) in their localhost development environment  
-Download or clone the .key and .crt files, then deploy them to your local web server to set up an SSL-enabled local development environment.
+### For HTTPS (SSL) in your local development environment  
+Download the cert bundle from [Download](#download) below, then configure your web server:
+
+#### nginx
+```nginx
+server {
+    listen 443 ssl http2;
+    server_name mysite.localhost.direct;
+
+    ssl_certificate     /path/to/localhost.direct.crt;
+    ssl_certificate_key /path/to/localhost.direct.key;
+
+    location / {
+        proxy_pass http://127.0.0.1:3000;
+    }
+}
+```
+
+#### Caddy (auto-HTTPS alternative — no cert files needed)
+Caddy can use the localhost.direct cert directly:
+```
+mysite.localhost.direct {
+    tls /path/to/localhost.direct.crt /path/to/localhost.direct.key
+    reverse_proxy localhost:3000
+}
+```
+
+#### Apache
+```apache
+<VirtualHost *:443>
+    ServerName mysite.localhost.direct
+    SSLEngine on
+    SSLCertificateFile /path/to/localhost.direct.crt
+    SSLCertificateKeyFile /path/to/localhost.direct.key
+    ProxyPass / http://127.0.0.1:3000/
+</VirtualHost>
+```
+
+#### Node.js (Express)
+```javascript
+const https = require('https');
+const fs = require('fs');
+const express = require('express');
+
+const app = express();
+https.createServer({
+    key: fs.readFileSync('/path/to/localhost.direct.key'),
+    cert: fs.readFileSync('/path/to/localhost.direct.crt')
+}, app).listen(443);
+```
+
+#### Go (net/http)
+Use the [HTTPS forwarding script](https://github.com/Upinel/localhost.direct/pull/16) for zero-config HTTPS→HTTP proxying.
+
+## Known Issues
+
+### ISP / DNS blocking of 127.0.0.1 resolution (#15)
+Some ISPs and DNS resolvers (OpenDNS, corporate networks) block DNS responses that resolve to `127.0.0.1` as a DNS rebinding protection measure. If `localhost.direct` doesn't resolve for you:
+
+1. **Use /etc/hosts** (simplest fix):
+   ```
+   127.0.0.1 localhost.direct
+   127.0.0.1 mysite.localhost.direct
+   ```
+2. **Switch DNS** to 8.8.8.8 (Google) or 1.1.1.1 (Cloudflare)
+3. **Run a local DNS resolver** (dnsmasq, unbound)
+
+### Certificate revocation (#18)
+The public CA certificate may be revoked if the private key is found in public repositories. For maximum stability, use the **Self-Signed Certificate** (Option A below) — it's immune to CA revocation and lasts 10 years.
 
 ## Limitation:
 **get.localhost.direct** is reserved and it is the only subdomain that you cannot use.
 
-## Download  
-We now have two-tier cert bundle, for user want to have fully anonymous, please use General Cert Bundle.
-We also provide Cert Bundle by Request and Cert Bundle by Sponsorship, you can request it by email.
+## Download
+We recommend two approaches. **Option A (Self-Signed) is the stable choice.** Option B (Public CA) is a convenience option that may be revoked if keys leak.
 
-### <ins>A. Non-Public CA certificate</ins> (If you have admin right on your development environment, you can use the following 10 years long pre-generated self-signed certificate.)
-This is the most certain way to avoid CA revocation. Simply download the following Certificate Bundle (or create it yourself), install it, and trust the certificate. As a result, you’ll have a 10-year-long *.localhost.direct certificate installed on your development environment. Since it’s trusted locally, it’s the most stable solution if you are in a environment that have full admin rights.  
+### <ins>A. Self-Signed Certificate</ins> ⭐ Recommended
+**Immune to CA revocation. 10-year validity. The most stable choice.**
+
+This pre-generated self-signed certificate is the most reliable option. Download, install, and trust it once in your OS/browser. Since it's trusted locally, it's immune to CA revocations and lasts 10 years.
+
 Download: [https://aka.re/localhost-ss](https://aka.re/localhost-ss)  
 Password: **localhost**
 
-### <ins>B. General Cert Bundle</ins> (fully Anonymous - Stopped, please consider using Non-Public CA certBundle and Trusted in local environment)</ins>
+**Trust the certificate:**
+- **macOS:** Double-click the `.crt` file → Keychain Access → drag to "System" → double-click → Trust → "Always Trust"
+- **Windows:** Double-click `.crt` → "Install Certificate" → "Local Machine" → "Trusted Root Certification Authorities"
+- **Linux (system-wide):** `sudo cp localhost.direct.crt /usr/local/share/ca-certificates/ && sudo update-ca-certificates`
+- **Firefox:** Settings → Privacy & Security → Certificates → View Certificates → Import
+- **Node.js:** `export NODE_EXTRA_CA_CERTS=/path/to/localhost.direct.crt`
 
+### <ins>B. Public CA Certificate</ins> ⚠️ May be revoked
 > [!IMPORTANT]
-> Using General Cert Bundle might have the risk of cert revocation again and again if any user misuses it. The General Cert might also have less priority of maintenance and require user reports to re-issue it. https://github.com/Upinel/localhost.direct/issues/18
+> The public CA certificate may be revoked if any user leaks the key publicly. It has lower maintenance priority and relies on user reports for re-issuance. See [#18](https://github.com/Upinel/localhost.direct/issues/18).
 
 Download: [https://aka.re/localhost](https://aka.re/localhost)  
-Password for General Cert Bundle file:  **IWillNotPutKeyFileInPublicAccessiblePlace.X1YKK**
+Password: **IWillNotPutKeyFileInPublicAccessiblePlace.X1YKK**
 
-### <ins>C. Cert Bundle by Request</ins> (Free - by minimal registration)
-You may send a request to get@localhost.direct to obtain a certificate bundle that is only shared with limited users if you want to reduce (not 100%) the risk of being revoked due to other users’ bad behaviour.   
-The email must include the following informations:  
-```
-Your Email: (Email must not be temporary email)
-Your GitHub ID:
-Your Project Name: 
-```
-**The Cert Bundle by Request might take sometime to process**  
+### <ins>C. Cert Bundle by Request</ins> (Free — minimal registration)
+Email get@localhost.direct with your Email, GitHub ID, and Project Name. Limited distribution reduces (but doesn't eliminate) revocation risk. Processing may take time.
 
-### <ins>D. Cert Bundle by Sponsorship</ins>  
-To express our gratitude to our sponsors, Sponsors can request one-year version of the Cert Bundle who have made a monthly donation of $5 or a one-time donation of over $40. To request this special offer, please send an email to get@localhost.direct, providing your sponsorship GitHub ID or PayPal ID. Your support will be instrumental in helping us develop our own auto-issuing portal as soon as possible.
+### <ins>D. Cert Bundle by Sponsorship</ins>
+Monthly $5+ or one-time $40+ sponsors receive a 1-year dedicated Cert Bundle. Email get@localhost.direct with your sponsorship ID. [Sponsor here](https://github.com/sponsors/Upinel).
 
 ## Last update Log. 
 - 2024-Dec-01 Suggest User to use and trusting Private CA certificate
