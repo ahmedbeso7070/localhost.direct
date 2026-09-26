@@ -143,6 +143,7 @@ Email get@localhost.direct with your Email, GitHub ID, and Project Name. Limited
 Monthly $5+ or one-time $40+ sponsors receive a 1-year dedicated Cert Bundle. Email get@localhost.direct with your sponsorship ID. [Sponsor here](https://github.com/sponsors/Upinel).
 
 ## Last update Log. 
+- 2026-Sep-26 Backend system update, Cert by Request and Cert by Sponsorship will receive new certificate every 60 days.
 - 2024-Dec-01 Suggest User to use and trusting Private CA certificate
 - 2024-Nov-19 Reissuing the General Certificate Bundle.
 - 2024-Nov-11 User keep leaking key, new policy need to apply before new portal unfortunately.
@@ -170,5 +171,6 @@ Giving this project a star fuels our commitment to maintaining and improving it.
 - Peter Jong  
 - cagnulein
 - Klijn Engineering
+- Saks Industries LLC
 
 I love you all <3
